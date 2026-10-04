@@ -5,6 +5,7 @@ import { getCurrentUser } from "../auth/session";
 import { deriveLeagueFromDate } from "../matchday/registration-window";
 import { createServiceRoleClient } from "../supabase/client";
 import type { GameRecord, NameResolution, PlayerIdentity } from "../stats-engine/types";
+import { validateMatchEdit, type MatchEditInput } from "./edit-match";
 import { parseReportText, resolveExtractionToGameRecord } from "./parse-report";
 import { findExistingDraftGameId, mergeReportIntoDraftGame, saveResolvedGame, type SaveResult } from "./save";
 
@@ -253,4 +254,39 @@ export async function saveReportImport(
   // succeeded — see ReportImportForm.tsx's handleSave).
   if (result.ok) revalidatePath("/matches");
   return result;
+}
+
+/** Deletes a saved match (report-imported, draft-created, or backfilled) — its roster_spots/goal_events/notable_mentions cascade with it, see saveResolvedGame's rollbackAndFail comment. */
+export async function deleteMatch(gameId: string): Promise<SaveResult> {
+  const admin = await requireAdminResult();
+  if ("ok" in admin) return admin;
+
+  const client = createServiceRoleClient();
+  const { error } = await client.from("game_records").delete().eq("game_id", gameId);
+  if (error) return { ok: false, error: "Could not delete that match." };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Edits a saved match's score, MVP, and report text. Rosters/goals aren't editable here — delete and re-import the report for those. */
+export async function updateMatch(gameId: string, input: MatchEditInput): Promise<SaveResult> {
+  const admin = await requireAdminResult();
+  if ("ok" in admin) return admin;
+
+  const validated = validateMatchEdit(input);
+  if (!validated.ok) return validated;
+  const { homeScore, awayScore, mvpCanonicalId, description } = validated.edit;
+
+  const client = createServiceRoleClient();
+  const { data, error } = await client
+    .from("game_records")
+    .update({ home_score: homeScore, away_score: awayScore, mvp_canonical_id: mvpCanonicalId, description })
+    .eq("game_id", gameId)
+    .select("game_id");
+  if (error) return { ok: false, error: "Could not save that match." };
+  if (!data || data.length === 0) return { ok: false, error: "That match no longer exists." };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

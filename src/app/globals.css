@@ -704,6 +704,25 @@ th.num {
   transition: opacity 0.15s ease;
 }
 
+.match-admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.delete-match-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--status-critical-bg);
+  color: var(--status-critical-fg);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .matchday-card-wrapper:hover .cancel-game-button,
 .matchday-card-wrapper:focus-within .cancel-game-button {
   opacity: 1;
