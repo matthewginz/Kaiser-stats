@@ -1,3 +1,6 @@
+/** manualResolutions value meaning "this flagged name is a brand-new player, not anyone known" — see ReportImportForm's "Add as new player". */
+export const NEW_PLAYER_RESOLUTION = "__new_player__";
+
 /**
  * What Gemini extracts, in raw-name form — before identity resolution.
  * Deliberately mirrors GameRecord's shape but with *Raw name strings

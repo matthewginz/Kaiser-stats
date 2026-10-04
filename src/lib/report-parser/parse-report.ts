@@ -3,7 +3,7 @@ import { createProvisionalIdentity, resolvePlayerName } from "../stats-engine/id
 import type { GameRecord, GoalEvent, NameResolution, NotableMention, PlayerIdentity, RosterSpot } from "../stats-engine/types";
 import { callGemini } from "./gemini-client";
 import { buildExtractionPrompt } from "./prompt";
-import type { RawExtraction } from "./types";
+import { NEW_PLAYER_RESOLUTION, type RawExtraction } from "./types";
 
 const FIRST_PICK_LINE = /^\s*first pick\s*:\s*(.+?)\s*$/im;
 
@@ -189,8 +189,28 @@ export function resolveExtractionToGameRecord(
   const provisionedByRaw = new Map<string, PlayerIdentity>();
   const seenFlagged = new Set<string>();
 
+  const knownIds = new Set(knownPlayers.map((p) => p.canonicalId));
+
+  function provision(raw: string): string {
+    const key = raw.trim().toLowerCase();
+    let provisional = provisionedByRaw.get(key);
+    if (!provisional) {
+      provisional = createProvisionalIdentity(raw);
+      // Never reuse an existing player's id (e.g. a retired, merged-away
+      // `auto-leonel`) — the save upserts provisioned players, so a reused id
+      // would overwrite that row instead of creating a new person.
+      const baseId = provisional.canonicalId;
+      for (let n = 2; knownIds.has(provisional.canonicalId); n++) {
+        provisional = { ...provisional, canonicalId: `${baseId}-${n}` };
+      }
+      provisionedByRaw.set(key, provisional);
+    }
+    return provisional.canonicalId;
+  }
+
   function resolve(raw: string): string | null {
     const manual = manualResolutions?.[raw.trim().toLowerCase()];
+    if (manual === NEW_PLAYER_RESOLUTION) return provision(raw);
     if (manual) return manual;
 
     const pool = [...knownPlayers, ...provisionedByRaw.values()];
@@ -208,13 +228,7 @@ export function resolveExtractionToGameRecord(
       return null;
     }
     // "unresolved" — no fuzzy match to anything, no misattribution risk.
-    const key = raw.trim().toLowerCase();
-    let provisional = provisionedByRaw.get(key);
-    if (!provisional) {
-      provisional = createProvisionalIdentity(raw);
-      provisionedByRaw.set(key, provisional);
-    }
-    return provisional.canonicalId;
+    return provision(raw);
   }
 
   // Keeps a `null` placeholder for a flagged/unresolved name instead of just

@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/session";
 import { formatMatchDateLabel, formatScoreLine, getMultiGoalNickname } from "@/lib/format";
 import { listGameRecords, listPlayers } from "@/lib/stats-engine/data";
 import { summarizePlayerGameStats } from "@/lib/stats-engine/goal-summary";
 import { rosterDisplayName } from "@/lib/stats-engine/identity";
 import { AssistChip } from "../../_components/AssistChip";
 import { BackLink } from "../../_components/BackLink";
+import { DeleteMatchButton } from "../../_components/DeleteMatchButton";
 import { GoalChip } from "../../_components/GoalChip";
 import { MvpBadge } from "../../_components/MvpBadge";
 
@@ -14,7 +16,7 @@ export default async function MatchDetailPage({
   params: Promise<{ gameId: string }>;
 }) {
   const { gameId } = await params;
-  const [players, games] = await Promise.all([listPlayers(), listGameRecords()]);
+  const [players, games, user] = await Promise.all([listPlayers(), listGameRecords(), getCurrentUser()]);
 
   const game = games.find((g) => g.gameId === gameId);
   if (!game) notFound();
@@ -30,6 +32,14 @@ export default async function MatchDetailPage({
   return (
     <main>
       <BackLink fallbackHref="/matches" />
+      {user?.isAdmin && (
+        <div className="match-admin-actions">
+          <a href={`/matches/${game.gameId}/edit`} className="rulebook-link">
+            Edit
+          </a>
+          <DeleteMatchButton gameId={game.gameId} date={game.date} />
+        </div>
+      )}
       <header className="player-header">
         <h1 className="screen-header">{formatMatchDateLabel(game.date)}</h1>
         <p className="player-summary-line">{formatScoreLine(game.homeScore, game.awayScore)}</p>
@@ -50,8 +60,7 @@ export default async function MatchDetailPage({
           <p className="match-detail-report">{game.description}</p>
         ) : (
           <div className="empty-state">
-            No report has been pasted in for this match yet. Once admin editing ships, this is
-            where Vadim&apos;s report gets pasted in for a match.
+            No report has been pasted in for this match yet.
           </div>
         )}
       </section>

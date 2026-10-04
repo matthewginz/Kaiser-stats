@@ -8,6 +8,7 @@ import {
   saveReportImport,
   type ReportPreview,
 } from "@/lib/report-parser/actions";
+import { NEW_PLAYER_RESOLUTION } from "@/lib/report-parser/types";
 import { formatScoreLine, getMultiGoalNickname } from "@/lib/format";
 import { summarizePlayerGameStats } from "@/lib/stats-engine/goal-summary";
 import { rosterDisplayName } from "@/lib/stats-engine/identity";
@@ -135,7 +136,12 @@ export function ReportImportForm({ currentUserCanonicalId }: { currentUserCanoni
     const key = raw.trim().toLowerCase();
     const nextManual = { ...manualResolutions, [key]: canonicalId };
     setManualResolutions(nextManual);
-    setConfirmedResolutions((prev) => [...prev.filter((r) => r.raw.trim().toLowerCase() !== key), { raw, canonicalId }]);
+    // A brand-new player has no existing player to alias onto — saving
+    // creates them from preview.provisionedPlayers instead.
+    setConfirmedResolutions((prev) => [
+      ...prev.filter((r) => r.raw.trim().toLowerCase() !== key),
+      ...(canonicalId === NEW_PLAYER_RESOLUTION ? [] : [{ raw, canonicalId }]),
+    ]);
 
     setError(null);
     startParsing(async () => {
@@ -340,6 +346,14 @@ export function ReportImportForm({ currentUserCanonicalId }: { currentUserCanoni
                           onClick={() => handleResolveFlaggedName(f.raw, draft)}
                         >
                           Use this
+                        </button>
+                        <button
+                          type="button"
+                          className="login-form-resend"
+                          disabled={isPending}
+                          onClick={() => handleResolveFlaggedName(f.raw, NEW_PLAYER_RESOLUTION)}
+                        >
+                          Add as new player: {f.raw}
                         </button>
                       </div>
                     </li>

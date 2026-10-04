@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { extractFirstPickAnnotation, parseReportText, resolveExtractionToGameRecord, stripGmailChrome } from "../parse-report";
 import { callGemini } from "../gemini-client";
-import type { RawExtraction } from "../types";
+import { NEW_PLAYER_RESOLUTION, type RawExtraction } from "../types";
 import type { PlayerIdentity } from "../../stats-engine/types";
 
 vi.mock("../gemini-client", () => ({ callGemini: vi.fn() }));
@@ -235,6 +235,38 @@ describe("resolveExtractionToGameRecord", () => {
     const result = resolveExtractionToGameRecord(extraction, flaggedPlayers, meta, null, { gera: "p4" });
     expect(result.gameRecord.mvpCanonicalId).toBe("p4");
     expect(result.flaggedNames).toHaveLength(0);
+  });
+
+  it("provisions a flagged name as a brand-new player when the admin picks 'Add as new player' — never reusing an existing (e.g. retired) id", () => {
+    const flaggedPlayers: PlayerIdentity[] = [
+      ...players,
+      { canonicalId: "p4", displayName: "Gena", aliases: [], knownEmails: [], leagues: ["sunday"], status: "regular" },
+      { canonicalId: "auto-gera", displayName: "Old Gera", aliases: [], knownEmails: [], leagues: [], status: "deferred" },
+    ];
+    const extraction: RawExtraction = {
+      date: "2026-07-05",
+      league: "sunday",
+      homeRosterRaw: ["Gera"],
+      awayRosterRaw: [],
+      homeTeamLabelRaw: null,
+      awayTeamLabelRaw: null,
+      homeScore: 1,
+      awayScore: 0,
+      goals: [{ scorerRaw: "Gera", assistRaw: null, team: "home" }],
+      mvpRaw: "Gera",
+      notableMentions: [],
+      pickOrderRaw: null,
+      preDraftBalanceRaw: null,
+    };
+
+    const result = resolveExtractionToGameRecord(extraction, flaggedPlayers, meta, null, {
+      gera: NEW_PLAYER_RESOLUTION,
+    });
+    expect(result.flaggedNames).toHaveLength(0);
+    expect(result.provisionedPlayers.map((p) => [p.canonicalId, p.displayName])).toEqual([["auto-gera-2", "Gera"]]);
+    expect(result.gameRecord.mvpCanonicalId).toBe("auto-gera-2");
+    expect(result.gameRecord.homeRoster[0]?.canonicalId).toBe("auto-gera-2");
+    expect(result.gameRecord.goals[0]?.scorerCanonicalId).toBe("auto-gera-2");
   });
 
   it("defaults to alternating pick numbers for every game, even with no annotation at all — captains never numbered", () => {
