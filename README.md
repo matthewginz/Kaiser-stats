@@ -4,59 +4,58 @@ LLM-powered stats tracker for a recurring pickup soccer league.
 
 **Live site:** https://kaiser-stats.vercel.app
 
-Portfolio project. Planning docs are checked in at the repo root
-(`kaiser_BUILD_SPEC.md` is the entry point). **No real player data lives in
-this repo** — see the Privacy section below.
+The live site serves real league data: standings, player profiles and match
+history for 100+ players across the 2022–2026 seasons. New games arrive every
+week without manual entry. The league organizer's recap emails are parsed by
+an LLM and written to the database on a schedule.
 
-**Starting a new session / picking up Phase 2? Read
-[`PHASE_2_HANDOFF.md`](PHASE_2_HANDOFF.md) first** — full current state,
-infrastructure map, credentials/access notes, and the Phase 2 checklist.
+## How it works
 
-## Status: stats engine live; matchday check-ins and draft also built
+- **Weekly ingest.** A scheduled job runs every Tuesday. It pulls the
+  organizer's recap emails from Gmail, including the full reply thread where
+  corrections usually land, and runs `npm run backfill-reports`. That script
+  parses each recap into a `GameRecord` with Gemini, then writes it to
+  Supabase. Re-runs are idempotent. The job only writes a game that has a real
+  recap email; days without one are skipped, never invented.
+- **Report parser** (`src/lib/report-parser/`). It turns recap text into a
+  score, rosters, goals/assists and an MVP. It checks that the goals add up to
+  the score. Names it can't match go to an admin review queue instead of being
+  guessed. Admins can also paste a report in through the site, and they can
+  edit or delete any saved match. See
+  [`docs/report-parsing.md`](docs/report-parsing.md).
+- **Stats engine** (`src/lib/stats-engine/`).
+  - Player identity resolution. It never auto-merges a fuzzy name match.
+  - A header-based parser for the historical season spreadsheets, whose column
+    layouts change from year to year.
+  - Per-player aggregation across the Saturday, Sunday and merged views.
+  - A plus-minus sanity check.
+  - A disclosed power-ranking formula with a minimum-games floor. The
+    `/rules` page explains every stat.
+- **Matchday** (`src/lib/matchday/`). Weekly check-in windows and a live
+  snake draft for the captains.
+- **Accounts.** Supabase auth. Each account links to a player record, and
+  admins get extra permissions. There is also a club chat.
 
-- `src/lib/stats-engine/` — core engine: player identity resolution (never
-  auto-merges a fuzzy name match), a header-based parser for the historical
-  season-standings spreadsheets (column layouts vary year to year), per-player
-  aggregation across Saturday/Sunday/Merged views, a plus-minus sanity check,
-  and a transparent, disclosed power-ranking formula with a minimum-games
-  floor.
-- `src/app/` — a Next.js demo (`/`) rendering the engine's output against a
-  fake sample dataset, plus a `/rules` page explaining how the stats are
-  computed.
-- `src/lib/matchday/` — weekly check-in windows, registration-window logic,
-  a live snake draft, and automated reminder/expiry emails, backed by two
-  scheduled GitHub Actions cron jobs (`.github/workflows/`) hitting the live
-  site's own API routes.
-- See [`docs/data-contract.md`](docs/data-contract.md) for the stable data
-  shapes (`PlayerSeasonStats`, `GameRecord`) both the spreadsheet backfill and
-  the live-report parser converge on, and for where new raw data files should go.
-- `supabase/schema.sql` + `scripts/backfill-to-supabase.ts` — local/private
-  real-data storage and backfill tooling. See
-  [`docs/supabase-setup.md`](docs/supabase-setup.md) to set it up. The public
-  demo site does not use this yet (see data-contract.md's "Going live with
-  real data").
-- `src/lib/report-parser/` — turns a report email's text into a `GameRecord`
-  via the Gemini API. See [`docs/report-parsing.md`](docs/report-parsing.md).
-  Manual/one-file-at-a-time for now; no automatic pipeline or Supabase write
-  path yet.
+See [`docs/data-contract.md`](docs/data-contract.md) for the shared data shapes
+(`PlayerSeasonStats`, `GameRecord`). Both the spreadsheet backfill and the
+report parser produce these shapes.
 
 ## Running it
 
 ```
 npm install
-npm test        # stats-engine unit tests
-npm run dev      # demo page at localhost:3000
+cp .env.example .env.local   # fill in Supabase + Gemini keys
+npm test
+npm run dev                  # localhost:3000
 ```
 
-`data/sample/` holds a small fake/anonymized dataset (`players.json`,
-`sample_season.xlsx`, `games.json`) so the engine and demo page run without any
-real data present. The spreadsheet regenerates via
-`scripts/generate-sample-data.mjs`.
+Setting up the database is covered in
+[`docs/supabase-setup.md`](docs/supabase-setup.md). `data/sample/` holds a
+small fake dataset that the unit tests use.
 
 ## Privacy
 
-Real player names, emails, and attendance/stats data never get committed
-here. They're gitignored and, if present, live only in a local `private/`
-folder (new raw files go in `private/incoming/`, see
-[`docs/data-contract.md`](docs/data-contract.md)) — see `kaiser_BUILD_SPEC.md`
-for the full project design and privacy policy.
+Real player names, emails and stats live only in the private Supabase
+database. They are never committed to this repo. Raw recap files go in the
+gitignored `private/` folder. See `kaiser_BUILD_SPEC.md` for the full design
+and privacy policy. `PHASE_2_HANDOFF.md` maps the infrastructure.
