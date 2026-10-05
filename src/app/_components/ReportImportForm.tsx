@@ -9,6 +9,7 @@ import {
   type ReportPreview,
 } from "@/lib/report-parser/actions";
 import { NEW_PLAYER_RESOLUTION } from "@/lib/report-parser/types";
+import { isPlausiblePlayerName } from "@/lib/stats-engine/identity";
 import { formatScoreLine, getMultiGoalNickname } from "@/lib/format";
 import { summarizePlayerGameStats } from "@/lib/stats-engine/goal-summary";
 import { rosterDisplayName } from "@/lib/stats-engine/identity";
@@ -347,14 +348,16 @@ export function ReportImportForm({ currentUserCanonicalId }: { currentUserCanoni
                         >
                           Use this
                         </button>
-                        <button
-                          type="button"
-                          className="login-form-resend"
-                          disabled={isPending}
-                          onClick={() => handleResolveFlaggedName(f.raw, NEW_PLAYER_RESOLUTION)}
-                        >
-                          Add as new player: {f.raw}
-                        </button>
+                        {isPlausiblePlayerName(f.raw) && (
+                          <button
+                            type="button"
+                            className="login-form-resend"
+                            disabled={isPending}
+                            onClick={() => handleResolveFlaggedName(f.raw, NEW_PLAYER_RESOLUTION)}
+                          >
+                            Add as new player: {f.raw}
+                          </button>
+                        )}
                       </div>
                     </li>
                   );

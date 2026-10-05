@@ -87,6 +87,27 @@ export function resolvePlayerName(
 }
 
 /**
+ * Whether a raw name is safe to turn into a brand-new public player (and a
+ * public /players/<slug> URL). A real report once produced "<name> 15 year
+ * old he replaced <name> in the last minute…" — an aside the LLM kept as part
+ * of the name, which went live with a minor's age in the URL. Checks the same
+ * shape the slug below produces (ASCII letters split on anything else), so a
+ * note can't slip through as one "word" like "Ari(fifteen-year-old-sub)":
+ * at most 3 letter-only parts joined by spaces or hyphens, 30 chars max.
+ * Anything else goes to a human. Only gates NEW identities — existing players
+ * resolve before this is ever checked.
+ */
+export function isPlausiblePlayerName(raw: string): boolean {
+  const trimmed = raw.trim();
+  return (
+    trimmed.length <= 30 &&
+    /^[a-z][a-z'.]*(?:[\s-]+[a-z][a-z'.]*){0,2}$/i.test(trimmed) &&
+    // Spelled-out ages/numbers ("Ari fifteen", "Bex teen yo") are letters-only too.
+    !/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|(?:thir|four|fif|six|seven|eigh|nine)teen|twenty|thirty|forty|fifty|years?|yrs?|old|yo|aged?|teen)\b/i.test(trimmed)
+  );
+}
+
+/**
  * A genuinely novel name (resolvePlayerName returned "unresolved" — zero
  * fuzzy candidates against the known list) carries no misattribution risk:
  * there's nothing similar it could be silently confused with. Unlike a

@@ -1,5 +1,5 @@
 import { computeMvp } from "../stats-engine/goal-summary";
-import { createProvisionalIdentity, resolvePlayerName } from "../stats-engine/identity";
+import { createProvisionalIdentity, isPlausiblePlayerName, resolvePlayerName } from "../stats-engine/identity";
 import type { GameRecord, GoalEvent, NameResolution, NotableMention, PlayerIdentity, RosterSpot } from "../stats-engine/types";
 import { callGemini } from "./gemini-client";
 import { buildExtractionPrompt } from "./prompt";
@@ -208,9 +208,26 @@ export function resolveExtractionToGameRecord(
     return provisional.canonicalId;
   }
 
+  function flag(resolution: NameResolution): null {
+    const key = resolution.raw.toLowerCase();
+    if (!seenFlagged.has(key)) {
+      seenFlagged.add(key);
+      flaggedNames.push(resolution);
+    }
+    return null;
+  }
+
+  // A string that doesn't look like a name (see isPlausiblePlayerName) never
+  // becomes a new public player — not even on an admin's "Add as new player"
+  // — it's flagged with no candidates so a human maps it to a real player.
+  function provisionOrFlag(raw: string): string | null {
+    if (isPlausiblePlayerName(raw)) return provision(raw);
+    return flag({ raw, status: "flagged", canonicalId: null, candidates: [] });
+  }
+
   function resolve(raw: string): string | null {
     const manual = manualResolutions?.[raw.trim().toLowerCase()];
-    if (manual === NEW_PLAYER_RESOLUTION) return provision(raw);
+    if (manual === NEW_PLAYER_RESOLUTION) return provisionOrFlag(raw);
     if (manual) return manual;
 
     const pool = [...knownPlayers, ...provisionedByRaw.values()];
@@ -219,16 +236,9 @@ export function resolveExtractionToGameRecord(
     if (resolution.status === "exact" && resolution.canonicalId) {
       return resolution.canonicalId;
     }
-    if (resolution.status === "flagged") {
-      const key = raw.toLowerCase();
-      if (!seenFlagged.has(key)) {
-        seenFlagged.add(key);
-        flaggedNames.push(resolution);
-      }
-      return null;
-    }
+    if (resolution.status === "flagged") return flag(resolution);
     // "unresolved" — no fuzzy match to anything, no misattribution risk.
-    return provision(raw);
+    return provisionOrFlag(raw);
   }
 
   // Keeps a `null` placeholder for a flagged/unresolved name instead of just

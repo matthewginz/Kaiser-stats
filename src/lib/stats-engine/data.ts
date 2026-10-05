@@ -1,3 +1,4 @@
+import { redactReportText } from "../format";
 import { createServiceRoleClient } from "../supabase/client";
 import { fetchAllRows } from "../supabase/paginate";
 import type { Position } from "./positions";
@@ -173,8 +174,8 @@ export function buildGameRecords(
         team: g.team,
       })),
       mvpCanonicalId: row.mvp_canonical_id,
-      notableMentions: mentions.map((m) => ({ canonicalId: m.canonical_id, quote: m.quote })),
-      description: row.description ?? undefined,
+      notableMentions: mentions.map((m) => ({ canonicalId: m.canonical_id, quote: redactReportText(m.quote) })),
+      description: row.description ? redactReportText(row.description) : undefined,
       source: row.source,
     };
   });

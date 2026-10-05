@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createProvisionalIdentityFromEmail,
   findPlayerByEmail,
+  isPlausiblePlayerName,
   isUnresolvedLoginStub,
   resolveOnboardingRosterName,
   resolvePlayerName,
@@ -190,5 +191,32 @@ describe("resolveOnboardingRosterName", () => {
       [historicalPlayer()],
     );
     expect(check).toEqual({ outcome: "proceed" });
+  });
+});
+
+describe("isPlausiblePlayerName", () => {
+  it("accepts real-shaped names", () => {
+    for (const name of ["Ari", "Sasha SI", "Oleg new Stas", "Mary-Kate", "O'Neil", "Dr. Bex"]) {
+      expect(isPlausiblePlayerName(name), name).toBe(true);
+    }
+  });
+
+  it("rejects notes, including ones with no spaces or digits that the slug would still turn into a long id", () => {
+    for (const name of [
+      "Dov 15 year old he replaced Eli",
+      "Ari(fifteen-year-old-he-replaced-Bex)",
+      "Ari-fifteen-year-old",
+      "Ari fifteen",
+      "Bex teen",
+      "Ari fifteen",
+      "Bex teen",
+      "Dov, Eli",
+      "Ari ２",
+      "Женя",
+      "",
+      "Abcdefghijklmnopqrstuvwxyzabcdef",
+    ]) {
+      expect(isPlausiblePlayerName(name), name).toBe(false);
+    }
   });
 });
