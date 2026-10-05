@@ -51,6 +51,12 @@ export const PLAYER_DOSSIERS: Record<string, PlayerDossier> = {
     snapshot: "October 2026",
     blurb: "A mid-draft forward who outproduces his slot — drafted around 13th, returns like a top-nine pick, with headers, rebounds and crosses.",
   },
+  // Oleg
+  "017": {
+    url: "https://claude.ai/artifact/16y3S42o7Tzsodw4ZcJ1X5",
+    snapshot: "October 2026",
+    blurb: "A holding midfielder drafted around 3rd for his defense, not his goals — the player captains send to shut down the other side's best attacker.",
+  },
 };
 
 export function getPlayerDossier(canonicalId: string): PlayerDossier | undefined {
