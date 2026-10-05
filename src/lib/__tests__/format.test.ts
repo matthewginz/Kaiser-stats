@@ -85,4 +85,14 @@ describe("redactReportText", () => {
       "Vadim ([email removed]), 2026-05-17:\nCy, Ari ([age removed], he replaced Bex), Eli. Dov is [age removed], he can play. [age removed] fan watched. 5 goals in 2 years.",
     );
   });
+
+  it("catches spelled-out and abbreviated ages, without touching ordinary numbers", () => {
+    expect(
+      redactReportText(
+        "Ari (fifteen-year-old), Bex 14yo, Cy 16 y/o, Dov aged 13, Eli age: 12, Fay twenty-one years of age. Won 7 to 3 on page 15, played 2 years.",
+      ),
+    ).toBe(
+      "Ari ([age removed]), Bex [age removed], Cy [age removed], Dov [age removed], Eli [age removed], Fay [age removed]. Won 7 to 3 on page 15, played 2 years.",
+    );
+  });
 });
