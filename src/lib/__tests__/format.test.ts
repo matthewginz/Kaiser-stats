@@ -5,6 +5,7 @@ import {
   formatScoreLine,
   formatWDL,
   getMultiGoalNickname,
+  redactReportText,
   truncate,
 } from "../format";
 
@@ -71,5 +72,17 @@ describe("getMultiGoalNickname", () => {
 
   it("returns null beyond 6 rather than guessing a name", () => {
     expect(getMultiGoalNickname(7)).toBeNull();
+  });
+});
+
+describe("redactReportText", () => {
+  it("strips email addresses and ages from public report text, leaving the rest", () => {
+    expect(
+      redactReportText(
+        "Vadim (organizer@yahoo.com), 2026-05-17:\nCy, Ari (15 year old, he replaced Bex), Eli. Dov is 16 years old, he can play. 8-yr-old fan watched. 5 goals in 2 years.",
+      ),
+    ).toBe(
+      "Vadim ([email removed]), 2026-05-17:\nCy, Ari ([age removed], he replaced Bex), Eli. Dov is [age removed], he can play. [age removed] fan watched. 5 goals in 2 years.",
+    );
   });
 });

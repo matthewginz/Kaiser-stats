@@ -17,6 +17,20 @@ export function formatChatTimestamp(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+/**
+ * Report text is the organizer's raw email thread, and it shows on public
+ * match pages. Strips what must never be public: email addresses (thread
+ * headers like "Vadim (x@yahoo.com), date:") and ages — the organizer
+ * routinely notes a newcomer's age, and some are minors ("Ari (15 year
+ * old, …)", "Dov is 16 years old"). Applied on read, so it covers every
+ * stored game and every future import without rewriting the database.
+ */
+export function redactReportText(text: string): string {
+  return text
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email removed]")
+    .replace(/\b\d{1,2}[\s-]*(?:years?|yrs?)[\s-]*old\b/gi, "[age removed]");
+}
+
 /** Null scores mean a "no report" game (see GameRecord.homeScore's doc comment) — a real roster, no score ever emailed. */
 export function formatScoreLine(homeScore: number | null, awayScore: number | null): string {
   if (homeScore === null || awayScore === null) return "No report";

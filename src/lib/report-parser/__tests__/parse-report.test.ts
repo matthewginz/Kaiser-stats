@@ -269,6 +269,37 @@ describe("resolveExtractionToGameRecord", () => {
     expect(result.gameRecord.goals[0]?.scorerCanonicalId).toBe("auto-gera-2");
   });
 
+  it("never provisions a public player from a name that is really a note (too many words, digits, commas) — flags it instead, even on 'Add as new player'", () => {
+    const note = "Dov 15 year old he replaced Eli in the last minute";
+    const list = "Dov, Eli";
+    const extraction: RawExtraction = {
+      date: "2026-07-05",
+      league: "sunday",
+      homeRosterRaw: [note, "Gera"],
+      awayRosterRaw: [list],
+      homeTeamLabelRaw: null,
+      awayTeamLabelRaw: null,
+      homeScore: 0,
+      awayScore: 0,
+      goals: [],
+      mvpRaw: null,
+      notableMentions: [],
+      pickOrderRaw: null,
+      preDraftBalanceRaw: null,
+    };
+
+    const result = resolveExtractionToGameRecord(extraction, players, meta, null, {
+      [note.toLowerCase()]: NEW_PLAYER_RESOLUTION,
+    });
+    expect(result.provisionedPlayers.map((p) => p.canonicalId)).toEqual(["auto-gera"]);
+    expect(result.flaggedNames.map((f) => [f.raw, f.candidates.length])).toEqual([
+      [note, 0],
+      [list, 0],
+    ]);
+    expect(result.gameRecord.homeRoster.map((s) => s.canonicalId)).toEqual(["auto-gera"]);
+    expect(result.gameRecord.awayRoster).toEqual([]);
+  });
+
   it("defaults to alternating pick numbers for every game, even with no annotation at all — captains never numbered", () => {
     const extraction: RawExtraction = {
       date: "2026-07-05",

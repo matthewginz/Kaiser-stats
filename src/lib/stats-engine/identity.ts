@@ -101,6 +101,20 @@ export function resolvePlayerName(
  * guessing wrong there means misattributing a real person's stats to
  * someone else.
  */
+/**
+ * Whether a raw name is safe to turn into a brand-new public player (and a
+ * public /players/<slug> URL). A real report once produced "<name> 15 year
+ * old he replaced <name> in the last minute…" — an aside the LLM kept as part of
+ * the name, which went live with a minor's age in the URL. Every real name in
+ * this league is at most 3 words with no digits or commas; anything else goes
+ * to a human instead. Only gates NEW identities — existing players resolve
+ * before this is ever checked.
+ */
+export function isPlausiblePlayerName(raw: string): boolean {
+  const trimmed = raw.trim();
+  return trimmed.length > 0 && trimmed.split(/\s+/).length <= 3 && !/[\d,]/.test(trimmed);
+}
+
 export function createProvisionalIdentity(rawName: string): PlayerIdentity {
   const trimmed = rawName.trim();
   const slug = trimmed
