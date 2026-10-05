@@ -836,14 +836,13 @@ th.num {
   line-height: 1.5;
 }
 
-/* Full report text on a computer; phones clamp it to 3 lines. */
-@media (max-width: 600px) {
-  .match-card-desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+/* Preview only — 3 lines at any width (a wider screen fits more words per
+   line); the full report is on the match page. */
+.match-card-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .match-card .mvp-badge {
