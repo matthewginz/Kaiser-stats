@@ -7,7 +7,7 @@ describe("player dossiers", () => {
     expect(entries.length).toBeGreaterThan(0);
     for (const [canonicalId, dossier] of entries) {
       expect(canonicalId).toBeTruthy();
-      expect(dossier.url).toMatch(/^https:\/\/claude\.ai\/code\/artifact\/[0-9a-f-]+$/);
+      expect(dossier.url).toMatch(/^https:\/\/claude\.ai\/(code\/artifact\/[0-9a-f-]+|artifact\/[A-Za-z0-9]+)$/);
       expect(dossier.blurb.trim().length).toBeGreaterThan(10);
       expect(dossier.snapshot.trim().length).toBeGreaterThan(0);
     }
