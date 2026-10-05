@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
-import { createProvisionalIdentity, resolvePlayerName } from "@/lib/stats-engine/identity";
+import { createProvisionalIdentity, isPlausiblePlayerName, resolvePlayerName } from "@/lib/stats-engine/identity";
 import type { PlayerIdentity } from "@/lib/stats-engine/types";
 import { createServiceRoleClient } from "@/lib/supabase/client";
 import { LEAGUE_CAPACITY_BY_LEAGUE } from "./constants";
@@ -162,6 +162,9 @@ export async function checkInNewPlayer(gameId: string, rawName: string): Promise
 
   const trimmed = rawName.trim();
   if (!trimmed) return { ok: false, error: "Name can't be empty." };
+  if (!isPlausiblePlayerName(trimmed)) {
+    return { ok: false, error: "Use just the player's name — up to 3 words, letters only, no notes." };
+  }
 
   const client = createServiceRoleClient();
 
@@ -470,6 +473,10 @@ export async function checkInPastedRoster(
       displayName = knownPlayers.find((p) => p.canonicalId === canonicalId)?.displayName ?? raw;
     } else if (resolution.status === "flagged") {
       flagged.push({ raw, closestMatch: resolution.candidates[0]?.displayName ?? null });
+      continue;
+    } else if (!isPlausiblePlayerName(raw)) {
+      // A pasted line that's really a note ("Ari (15, new guy)") never becomes a public player.
+      flagged.push({ raw, closestMatch: null });
       continue;
     } else {
       const provisional = createProvisionalIdentity(raw);

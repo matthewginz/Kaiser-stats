@@ -99,7 +99,12 @@ export function resolvePlayerName(
  */
 export function isPlausiblePlayerName(raw: string): boolean {
   const trimmed = raw.trim();
-  return trimmed.length <= 30 && /^[a-z][a-z'.]*(?:[\s-]+[a-z][a-z'.]*){0,2}$/i.test(trimmed);
+  return (
+    trimmed.length <= 30 &&
+    /^[a-z][a-z'.]*(?:[\s-]+[a-z][a-z'.]*){0,2}$/i.test(trimmed) &&
+    // Spelled-out ages/numbers ("Ari fifteen", "Bex teen yo") are letters-only too.
+    !/\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|(?:thir|four|fif|six|seven|eigh|nine)teen|twenty|thirty|forty|fifty|years?|yrs?|old|yo|aged?|teen)\b/i.test(trimmed)
+  );
 }
 
 /**
