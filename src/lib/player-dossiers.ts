@@ -39,6 +39,12 @@ export const PLAYER_DOSSIERS: Record<string, PlayerDossier> = {
     blurb:
       "From near-last pick to consensus first overall in two years — the biggest re-rating in the league, built on work-rate.",
   },
+  // Vadim Palmer
+  "004": {
+    url: "https://claude.ai/artifact/LR6B4kHkPL7AZTNJq9aTSX",
+    snapshot: "October 2026",
+    blurb: "The league's organizer, captain and go-to goalkeeper — 429 games, the most of anyone, and his value never shows up on the scoresheet.",
+  },
 };
 
 export function getPlayerDossier(canonicalId: string): PlayerDossier | undefined {
