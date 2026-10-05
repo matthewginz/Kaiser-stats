@@ -1,3 +1,4 @@
+import { stripGmailChrome } from "../format";
 import { computeMvp } from "../stats-engine/goal-summary";
 import { createProvisionalIdentity, isPlausiblePlayerName, resolvePlayerName } from "../stats-engine/identity";
 import type { GameRecord, GoalEvent, NameResolution, NotableMention, PlayerIdentity, RosterSpot } from "../stats-engine/types";
@@ -22,47 +23,10 @@ export function extractFirstPickAnnotation(rawFileText: string): { firstPickRaw:
   };
 }
 
-// Gmail's own "copy the thread text" output repeats this exact boilerplate
-// once per message: a sender-name line, then a date/time line, then a
-// "to <comma-separated recipients>" line — none of it is report content,
-// and leaving it in wastes the model's attention (and once already caused a
-// real parse to trip up trying to treat "to Eduard, Muravchik, ..." as game
-// content). "Inbox" and "Summarize this email" are separate stray UI-chrome
-// lines Gmail's copy also includes. The date/time line's exact format
-// varies (confirmed two real variants): "Sun, Jun 21, 11:14 AM" (weekday,
-// no year) and "Jun 28, 2026, 11:46 AM" (year, no weekday) — both the
-// weekday prefix and the year are optional here to cover either.
-const GMAIL_DATE_LINE =
-  /^((Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+)?\w+\s+\d{1,2},\s+(\d{4},\s+)?\d{1,2}:\d{2}\s*(AM|PM)$/i;
-
-/**
- * Strips Gmail copy-paste chrome (see GMAIL_DATE_LINE's comment) out of a
- * pasted thread before it reaches the model — deliberately applied inside
- * parseReportText itself (not left to each caller, unlike
- * extractFirstPickAnnotation's human-supplied annotation) since this is
- * pure noise removal that's always safe, regardless of source.
- */
-export function stripGmailChrome(rawText: string): string {
-  const lines = rawText.split("\n");
-  const kept: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i]!.trim();
-
-    if (/^inbox$/i.test(trimmed) || /^summarize this email$/i.test(trimmed)) continue;
-
-    const nextTrimmed = lines[i + 1]?.trim() ?? "";
-    if (trimmed.length > 0 && GMAIL_DATE_LINE.test(nextTrimmed)) {
-      i += 1; // also skip the date line
-      if (lines[i + 1]?.trim().toLowerCase().startsWith("to ")) i += 1; // and the recipients line, if present
-      continue;
-    }
-
-    kept.push(lines[i]!);
-  }
-
-  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-}
+// Gmail chrome is stripped before the model sees the thread — pure noise
+// removal (and it once tripped a real parse into reading "to Eduard, ..." as
+// game content). Lives in format.ts since public pages apply it on read too.
+export { stripGmailChrome };
 
 // A real response has been observed to come back HTTP 200, finishReason
 // "STOP" (Gemini considers itself done), but with the JSON body truncated

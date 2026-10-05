@@ -36,10 +36,50 @@ const AGE_PATTERN = new RegExp(
   "gi",
 );
 
+// ponytail: US-style 10-digit numbers only; widen if international numbers show up.
+const PHONE_PATTERN = /(?:\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
+
+/** Also strips the Gmail header (its "to …" line lists recipients' email usernames) and phone numbers — names stay, every way to contact someone goes. */
 export function redactReportText(text: string): string {
-  return text
+  return stripGmailChrome(text)
     .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email removed]")
+    .replace(PHONE_PATTERN, "[phone removed]")
     .replace(AGE_PATTERN, "[age removed]");
+}
+
+// Gmail's own "copy the thread text" output repeats this exact boilerplate
+// once per message: a sender-name line, then a date/time line, then a
+// "to <comma-separated recipients>" line — none of it is report content, and
+// the recipients are email usernames, so it must never be public. "Inbox" and
+// "Summarize this email" are separate stray UI-chrome lines Gmail's copy also
+// includes. The date/time line's format varies (confirmed real variants):
+// "Sun, Jun 21, 11:14 AM", "Jun 28, 2026, 11:46 AM", and for recent mail
+// "1:09 PM (1 hour ago)" / "Sat, Oct 3, 8:51 PM (17 hours ago)" — so the
+// weekday, date, year and "(… ago)" suffix are all optional.
+const GMAIL_DATE_LINE =
+  /^(?:(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+)?(?:\w+\s+\d{1,2},\s+(?:\d{4},\s+)?)?\d{1,2}:\d{2}\s*(?:AM|PM)(?:\s*\([^)]*\))?$/i;
+
+/** Strips Gmail copy-paste chrome (see GMAIL_DATE_LINE's comment) out of a pasted thread. */
+export function stripGmailChrome(rawText: string): string {
+  const lines = rawText.split("\n");
+  const kept: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i]!.trim();
+
+    if (/^inbox$/i.test(trimmed) || /^summarize this email$/i.test(trimmed)) continue;
+
+    const nextTrimmed = lines[i + 1]?.trim() ?? "";
+    if (trimmed.length > 0 && GMAIL_DATE_LINE.test(nextTrimmed)) {
+      i += 1; // also skip the date line
+      if (lines[i + 1]?.trim().toLowerCase().startsWith("to ")) i += 1; // and the recipients line, if present
+      continue;
+    }
+
+    kept.push(lines[i]!);
+  }
+
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** Null scores mean a "no report" game (see GameRecord.homeScore's doc comment) — a real roster, no score ever emailed. */

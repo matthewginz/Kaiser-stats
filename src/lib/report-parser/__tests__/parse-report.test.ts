@@ -604,7 +604,7 @@ describe("stripGmailChrome", () => {
       "",
       "Vadim Palmer",
       "Sun, Jun 14, 1:22 PM",
-      "to Eduard, Muravchik, idolg, kbarona, Mihail, ruscharge, evreychik1, quanmng, avolkin67, Isaac, Jonathan, Boris, nos01, Oleg, bryanfrid, me, matthew.rakov, levinmik, stolyarmarc18, dsherlis, kirill011594, emre.kapuzov94, lazzturkkemran49, Bryan, polarbear1850",
+      "to Eduard, Muravchik, jdoe12, asmith, Mihail, player99, me, b.jones, Bryan",
       "",
       "20 people",
       "",
@@ -630,6 +630,13 @@ describe("stripGmailChrome", () => {
   it("handles a date line with a year and no weekday prefix (real variant, e.g. June 28's report)", () => {
     const raw = ["Vadim Palmer", "Jun 28, 2026, 11:46 AM", "to Eduard, Muravchik", "", "Report body here."].join("\n");
     expect(stripGmailChrome(raw)).toBe("Report body here.");
+  });
+
+  it("handles recent-mail date lines with a relative '(… ago)' suffix (real variants)", () => {
+    for (const dateLine of ["1:09 PM (1 hour ago)", "Sat, Oct 3, 8:51 PM (17 hours ago)"]) {
+      const raw = ["Vadim Palmer", dateLine, "to Eduard, jdoe12, me", "", "Report body here."].join("\n");
+      expect(stripGmailChrome(raw)).toBe("Report body here.");
+    }
   });
 
   it("leaves plain report text with no Gmail chrome completely unchanged in substance", () => {

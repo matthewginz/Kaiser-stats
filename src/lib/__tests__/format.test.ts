@@ -83,4 +83,21 @@ describe("redactReportText", () => {
       "Ari ([age removed]), Bex [age removed], Cy [age removed], Dov [age removed], Eli [age removed], Fay [age removed]. Won 7 to 3 on page 15, played 2 years.",
     );
   });
+
+  it("strips the Gmail header and phone numbers but keeps names", () => {
+    expect(
+      redactReportText(
+        [
+          "Inbox",
+          "Summarize this email",
+          "",
+          "Vadim Palmer",
+          "1:09 PM (1 hour ago)",
+          "to Eduard, jdoe12, me",
+          "",
+          "Cy, Ari, Bex. Call 917-555-0123 or (201) 555 0199. Won 7 to 3.",
+        ].join("\n"),
+      ),
+    ).toBe("Cy, Ari, Bex. Call [phone removed] or [phone removed]. Won 7 to 3.");
+  });
 });
