@@ -105,10 +105,16 @@ body {
   line-height: 1.5;
 }
 
+/* Full width on every screen (no column cap, per _website-gate STANDARDS) —
+   phones keep a tight gutter, computers get a wider one. */
 main {
   padding: 5.5rem 1.25rem 1.5rem;
-  max-width: 640px;
-  margin-inline: auto;
+}
+
+@media (min-width: 601px) {
+  main {
+    padding-inline: 2.5rem;
+  }
 }
 
 /* Screen headers — bold, all-caps, matches the mockups */
@@ -635,9 +641,11 @@ th.num {
 }
 
 /* Past Matches — card list */
+/* One column on a phone; as many ~340px columns as fit on a computer, so a
+   wide screen isn't one stretched-out card per row. */
 .match-card-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 0.9rem;
 }
 
@@ -826,6 +834,16 @@ th.num {
   color: var(--text-secondary);
   font-size: 0.88rem;
   line-height: 1.5;
+}
+
+/* Full report text on a computer; phones clamp it to 3 lines. */
+@media (max-width: 600px) {
+  .match-card-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 .match-card .mvp-badge {

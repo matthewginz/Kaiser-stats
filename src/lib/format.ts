@@ -56,11 +56,6 @@ export function formatPlusMinus(plusMinus: number): string {
   return plusMinus > 0 ? `+${plusMinus}` : `${plusMinus}`;
 }
 
-export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength).trimEnd()}...`;
-}
-
 const MULTI_GOAL_NICKNAME_BY_COUNT: Record<number, string> = {
   2: "Brace",
   3: "Hat-trick",

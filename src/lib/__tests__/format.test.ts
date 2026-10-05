@@ -6,7 +6,6 @@ import {
   formatWDL,
   getMultiGoalNickname,
   redactReportText,
-  truncate,
 } from "../format";
 
 describe("formatMatchDateLabel", () => {
@@ -42,17 +41,6 @@ describe("formatPlusMinus", () => {
   it("leaves zero and negative values unprefixed", () => {
     expect(formatPlusMinus(0)).toBe("0");
     expect(formatPlusMinus(-3)).toBe("-3");
-  });
-});
-
-describe("truncate", () => {
-  it("leaves text at or under the limit unchanged", () => {
-    expect(truncate("short", 10)).toBe("short");
-    expect(truncate("exactlyten", 10)).toBe("exactlyten");
-  });
-
-  it("truncates text over the limit and appends an ellipsis", () => {
-    expect(truncate("this is a long sentence", 10)).toBe("this is a...");
   });
 });
 
