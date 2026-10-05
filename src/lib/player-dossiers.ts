@@ -45,6 +45,12 @@ export const PLAYER_DOSSIERS: Record<string, PlayerDossier> = {
     snapshot: "October 2026",
     blurb: "The league's organizer, captain and go-to goalkeeper — 429 games, the most of anyone, and his value never shows up on the scoresheet.",
   },
+  // Edik
+  "009": {
+    url: "https://claude.ai/artifact/WcJBK8dn4Nka7o5ie5c2k1",
+    snapshot: "October 2026",
+    blurb: "A mid-draft forward who outproduces his slot — drafted around 13th, returns like a top-nine pick, with headers, rebounds and crosses.",
+  },
 };
 
 export function getPlayerDossier(canonicalId: string): PlayerDossier | undefined {
