@@ -1,5 +1,7 @@
-import { formatMatchDateLabel, formatScoreLine } from "@/lib/format";
+import { formatMatchDateLabel, formatScoreLine, truncate } from "@/lib/format";
 import { MvpBadge } from "./MvpBadge";
+
+const DESCRIPTION_TRUNCATE_LENGTH = 140;
 
 /**
  * Renders its own inner link to the match (rather than being wrapped in an
@@ -34,7 +36,7 @@ export function MatchCard({
           <span className="match-card-score">{formatScoreLine(homeScore, awayScore)}</span>
         </div>
         {description && (
-          <p className="match-card-desc">{description}</p>
+          <p className="match-card-desc">{truncate(description, DESCRIPTION_TRUNCATE_LENGTH)}</p>
         )}
       </a>
       {mvpName &&
