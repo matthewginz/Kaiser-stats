@@ -101,8 +101,8 @@ async function main() {
       firstPickRaw,
     );
 
-    if (resolved.goalSumMismatch) {
-      console.warn("  Goal-sum mismatch — scorer counts don't match the stated score. Review before trusting this one.");
+    if (resolved.gameRecord.status === "pending_review") {
+      console.warn(`  PENDING REVIEW (hidden from public stats until an admin saves it from Edit match): ${resolved.gameRecord.reviewReason}`);
     }
     if (resolved.firstPickWarning) {
       console.warn(`  ${resolved.firstPickWarning}`);

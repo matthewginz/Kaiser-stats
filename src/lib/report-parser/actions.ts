@@ -17,7 +17,6 @@ export interface ReportPreview {
   rosterNames: Record<string, string | null>;
   provisionedPlayers: PlayerIdentity[];
   flaggedNames: NameResolution[];
-  goalSumMismatch: boolean;
   firstPickWarning: string | null;
   pickOrderWarning: string | null;
   /** See ResolvedReport's doc comment — always shown to the admin as a yes/no question, never silently trusted either way. */
@@ -136,7 +135,6 @@ export async function previewReportImport(input: {
       rosterNames: buildRosterNames(knownPlayers, resolved.provisionedPlayers),
       provisionedPlayers: resolved.provisionedPlayers,
       flaggedNames: resolved.flaggedNames,
-      goalSumMismatch: resolved.goalSumMismatch,
       firstPickWarning: resolved.firstPickWarning,
       pickOrderWarning: resolved.pickOrderWarning,
       rosterOrderIsDraftOrder: resolved.rosterOrderIsDraftOrder,
@@ -281,7 +279,9 @@ export async function updateMatch(gameId: string, input: MatchEditInput): Promis
   const client = createServiceRoleClient();
   const { data, error } = await client
     .from("game_records")
-    .update({ home_score: homeScore, away_score: awayScore, mvp_canonical_id: mvpCanonicalId, description })
+    // An admin saving this form is the review: it publishes a pending_review
+    // game. review_reason is deliberately left as history.
+    .update({ home_score: homeScore, away_score: awayScore, mvp_canonical_id: mvpCanonicalId, description, status: "published" })
     .eq("game_id", gameId)
     .select("game_id");
   if (error) return { ok: false, error: "Could not save that match." };

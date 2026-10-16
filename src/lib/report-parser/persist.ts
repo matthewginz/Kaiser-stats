@@ -1,4 +1,4 @@
-import type { GameRecord } from "../stats-engine/types";
+import type { GameRecord, GameStatus } from "../stats-engine/types";
 
 export interface GameRecordRow {
   game_id: string;
@@ -8,6 +8,10 @@ export interface GameRecordRow {
   away_team_label: string;
   home_score: number | null;
   away_score: number | null;
+  stated_home_score: number | null;
+  stated_away_score: number | null;
+  status: GameStatus;
+  review_reason: string | null;
   mvp_canonical_id: string | null;
   description: string | null;
   source: string;
@@ -53,6 +57,10 @@ export function buildPersistenceRows(gameRecord: GameRecord): {
     away_team_label: gameRecord.awayTeamLabel,
     home_score: gameRecord.homeScore,
     away_score: gameRecord.awayScore,
+    stated_home_score: gameRecord.statedHomeScore ?? null,
+    stated_away_score: gameRecord.statedAwayScore ?? null,
+    status: gameRecord.status ?? "published",
+    review_reason: gameRecord.reviewReason ?? null,
     mvp_canonical_id: gameRecord.mvpCanonicalId,
     description: gameRecord.description ?? null,
     source: gameRecord.source,

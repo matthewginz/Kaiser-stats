@@ -329,15 +329,25 @@ export function resolveExtractionToGameRecord(
     if (canonicalId) notableMentions.push({ canonicalId, quote: m.quote });
   }
 
-  const homeScore = extraction.homeScore ?? 0;
-  const awayScore = extraction.awayScore ?? 0;
+  // The score is derived from the goal events, never taken from the model's
+  // separately-stated final score (real bug: 2026-10-11-sunday was saved 5:3
+  // while its goal events were 6:3). The stated score is only a cross-check —
+  // any disagreement, or no stated score at all, holds the game for review.
+  const homeScore = goals.filter((g) => g.team === "home").length;
+  const awayScore = goals.filter((g) => g.team === "away").length;
+  const statedHomeScore = extraction.homeScore ?? null;
+  const statedAwayScore = extraction.awayScore ?? null;
   const mvpCanonicalId = computeMvp(goals, homeScore, awayScore, narrativeMvpCanonicalId);
-  const homeGoalCount = goals.filter((g) => g.team === "home").length;
-  const awayGoalCount = goals.filter((g) => g.team === "away").length;
   const goalSumMismatch =
-    extraction.homeScore !== null &&
-    extraction.awayScore !== null &&
-    (homeGoalCount !== homeScore || awayGoalCount !== awayScore);
+    statedHomeScore !== null &&
+    statedAwayScore !== null &&
+    (homeScore !== statedHomeScore || awayScore !== statedAwayScore);
+  let reviewReason: string | null = null;
+  if (statedHomeScore === null || statedAwayScore === null) {
+    reviewReason = `No stated final score to cross-check the goal events (${homeScore}:${awayScore}).`;
+  } else if (goalSumMismatch) {
+    reviewReason = `Stated score ${statedHomeScore}:${statedAwayScore}, but goal events add up to ${homeScore}:${awayScore}.`;
+  }
 
   const gameRecord: GameRecord = {
     gameId: meta.gameId,
@@ -353,6 +363,10 @@ export function resolveExtractionToGameRecord(
     awayTeamLabel: extraction.awayTeamLabelRaw?.trim() || "Blue",
     homeScore,
     awayScore,
+    statedHomeScore,
+    statedAwayScore,
+    status: reviewReason ? "pending_review" : "published",
+    reviewReason,
     goals,
     mvpCanonicalId,
     notableMentions,

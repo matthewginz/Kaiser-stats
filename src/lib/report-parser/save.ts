@@ -183,6 +183,10 @@ export async function mergeReportIntoDraftGame(
     .update({
       home_score: gameRecord.homeScore,
       away_score: gameRecord.awayScore,
+      stated_home_score: gameRecord.statedHomeScore ?? null,
+      stated_away_score: gameRecord.statedAwayScore ?? null,
+      status: gameRecord.status ?? "published",
+      review_reason: gameRecord.reviewReason ?? null,
       mvp_canonical_id: gameRecord.mvpCanonicalId,
       home_team_label: gameRecord.homeTeamLabel,
       away_team_label: gameRecord.awayTeamLabel,
