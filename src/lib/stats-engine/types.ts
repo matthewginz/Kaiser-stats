@@ -136,6 +136,8 @@ export interface PlusMinusMismatch {
   expectedPlusMinus: number;
 }
 
+export type GameStatus = "published" | "pending_review";
+
 /** One goal, as it will be extracted from a report by the future LLM parser. */
 export interface GoalEvent {
   scorerCanonicalId: string;
@@ -206,6 +208,18 @@ export interface GameRecord {
    */
   homeScore: number | null;
   awayScore: number | null;
+  /**
+   * The report's own stated final score, kept only as a cross-check —
+   * homeScore/awayScore are derived from `goals` (see
+   * resolveExtractionToGameRecord). Undefined/null for draft-created games
+   * and anything saved before 2026-10-16.
+   */
+  statedHomeScore?: number | null;
+  statedAwayScore?: number | null;
+  /** Undefined means "published". A pending_review game is hidden from every public page (see listGameRecords). */
+  status?: GameStatus;
+  /** Why the game was held for review. Kept as history even after an admin publishes it. */
+  reviewReason?: string | null;
   goals: GoalEvent[];
   /** App-derived MVP call for this game, or null if not yet computed. */
   mvpCanonicalId: string | null;

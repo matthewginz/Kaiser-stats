@@ -12,7 +12,7 @@ export default async function EditMatchPage({ params }: { params: Promise<{ game
   const { gameId } = await params;
   await requireAdmin(`/matches/${gameId}`);
 
-  const [players, games] = await Promise.all([listPlayers(), listGameRecords()]);
+  const [players, games] = await Promise.all([listPlayers(), listGameRecords({ includePending: true })]);
   const game = games.find((g) => g.gameId === gameId);
   if (!game) notFound();
 

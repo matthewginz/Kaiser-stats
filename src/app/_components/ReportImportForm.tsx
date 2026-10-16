@@ -245,9 +245,10 @@ export function ReportImportForm({ currentUserCanonicalId }: { currentUserCanoni
             {formatScoreLine(preview.gameRecord.homeScore, preview.gameRecord.awayScore)}
           </p>
 
-          {preview.goalSumMismatch && (
+          {preview.gameRecord.status === "pending_review" && (
             <p className="report-import-warning">
-              Goal count doesn&apos;t match the stated score — double-check before saving.
+              {preview.gameRecord.reviewReason} This game will be saved as pending review, hidden from public stats
+              until an admin saves it from Edit match.
             </p>
           )}
           {preview.firstPickWarning && <p className="report-import-warning">{preview.firstPickWarning}</p>}

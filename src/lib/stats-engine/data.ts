@@ -2,7 +2,7 @@ import { redactReportText } from "../format";
 import { createServiceRoleClient } from "../supabase/client";
 import { fetchAllRows } from "../supabase/paginate";
 import type { Position } from "./positions";
-import type { GameRecord, League, PlayerIdentity, SeasonStandingRow } from "./types";
+import type { GameRecord, GameStatus, League, PlayerIdentity, SeasonStandingRow } from "./types";
 
 /**
  * The real-data query layer described in docs/data-contract.md's "Going
@@ -96,6 +96,7 @@ interface GameRecordDbRow {
   mvp_canonical_id: string | null;
   description: string | null;
   source: string;
+  status: GameStatus;
 }
 
 interface RosterSpotDbRow {
@@ -119,7 +120,7 @@ interface NotableMentionDbRow {
 }
 
 const GAME_RECORD_COLUMNS =
-  "game_id, date, league, home_team_label, away_team_label, home_score, away_score, mvp_canonical_id, description, source";
+  "game_id, date, league, home_team_label, away_team_label, home_score, away_score, mvp_canonical_id, description, source, status";
 const ROSTER_SPOT_COLUMNS = "game_id, canonical_id, side, pick_number";
 const GOAL_EVENT_COLUMNS = "game_id, scorer_canonical_id, assist_canonical_id, team";
 const NOTABLE_MENTION_COLUMNS = "game_id, canonical_id, quote";
@@ -144,12 +145,16 @@ export function buildGameRecords(
   rosterRows: RosterSpotDbRow[],
   goalRows: GoalEventDbRow[],
   mentionRows: NotableMentionDbRow[],
+  // Pending-review games (stated score disagreed with the goal events, see
+  // resolveExtractionToGameRecord) are hidden from every public stat, table,
+  // and ranking; only the admin edit page asks for them.
+  { includePending = false }: { includePending?: boolean } = {},
 ): GameRecord[] {
   const rosterByGame = groupByGameId(rosterRows);
   const goalsByGame = groupByGameId(goalRows);
   const mentionsByGame = groupByGameId(mentionRows);
 
-  return gameRows.map((row) => {
+  return gameRows.filter((row) => includePending || row.status !== "pending_review").map((row) => {
     const roster = rosterByGame.get(row.game_id) ?? [];
     const goals = goalsByGame.get(row.game_id) ?? [];
     const mentions = mentionsByGame.get(row.game_id) ?? [];
@@ -177,6 +182,7 @@ export function buildGameRecords(
       notableMentions: mentions.map((m) => ({ canonicalId: m.canonical_id, quote: redactReportText(m.quote) })),
       description: row.description ? redactReportText(row.description) : undefined,
       source: row.source,
+      status: row.status,
     };
   });
 }
@@ -193,7 +199,7 @@ export async function listSeasonStatsCutoffs(): Promise<Map<number, string>> {
   return new Map((data as SeasonStatsCutoffDbRow[] | null ?? []).map((row) => [row.year, row.cutoff_date]));
 }
 
-export async function listGameRecords(): Promise<GameRecord[]> {
+export async function listGameRecords(options: { includePending?: boolean } = {}): Promise<GameRecord[]> {
   const client = createServiceRoleClient();
   const [gameRows, rosterRows, goalRows, mentionRows] = await Promise.all([
     fetchAllRows<GameRecordDbRow>(client, "game_records", GAME_RECORD_COLUMNS, "date"),
@@ -201,5 +207,5 @@ export async function listGameRecords(): Promise<GameRecord[]> {
     fetchAllRows<GoalEventDbRow>(client, "goal_events", GOAL_EVENT_COLUMNS, "id"),
     fetchAllRows<NotableMentionDbRow>(client, "notable_mentions", NOTABLE_MENTION_COLUMNS, "id"),
   ]);
-  return buildGameRecords(gameRows, rosterRows, goalRows, mentionRows);
+  return buildGameRecords(gameRows, rosterRows, goalRows, mentionRows, options);
 }

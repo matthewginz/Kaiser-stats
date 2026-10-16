@@ -50,6 +50,14 @@ describe("resolveExtractionToGameRecord", () => {
     ]);
     expect(result.gameRecord.mvpCanonicalId).toBe("p1");
     expect(result.goalSumMismatch).toBe(false);
+    expect(result.gameRecord).toMatchObject({
+      homeScore: 2,
+      awayScore: 1,
+      statedHomeScore: 2,
+      statedAwayScore: 1,
+      status: "published",
+      reviewReason: null,
+    });
     expect(result.provisionedPlayers).toHaveLength(0);
     expect(result.flaggedNames).toHaveLength(0);
     expect(result.gameRecord.homeTeamLabel).toBe("Orange");
@@ -156,6 +164,72 @@ describe("resolveExtractionToGameRecord", () => {
 
     const result = resolveExtractionToGameRecord(extraction, players, meta);
     expect(result.goalSumMismatch).toBe(true);
+    // Score comes from the goal events, never the stated score; the game is held for review.
+    expect(result.gameRecord).toMatchObject({
+      homeScore: 1,
+      awayScore: 0,
+      statedHomeScore: 3,
+      statedAwayScore: 0,
+      status: "pending_review",
+      reviewReason: "Stated score 3:0, but goal events add up to 1:0.",
+    });
+  });
+
+  it("holds a game for review when no final score was stated, scoring it from the goal events", () => {
+    const extraction: RawExtraction = {
+      date: "2026-07-05",
+      league: "sunday",
+      homeRosterRaw: [],
+      awayRosterRaw: [],
+      homeTeamLabelRaw: null,
+      awayTeamLabelRaw: null,
+      homeScore: null,
+      awayScore: null,
+      goals: [{ scorerRaw: "Ari Fox", assistRaw: null, team: "home" }],
+      mvpRaw: null,
+      notableMentions: [],
+      pickOrderRaw: null,
+      preDraftBalanceRaw: null,
+    };
+
+    const result = resolveExtractionToGameRecord(extraction, players, meta);
+    expect(result.gameRecord).toMatchObject({
+      homeScore: 1,
+      awayScore: 0,
+      statedHomeScore: null,
+      statedAwayScore: null,
+      status: "pending_review",
+      reviewReason: "No stated final score to cross-check the goal events (1:0).",
+    });
+  });
+
+  it("holds a game for review when a flagged scorer's goal is dropped, rather than publishing a short count", () => {
+    const flaggedPlayers: PlayerIdentity[] = [
+      ...players,
+      { canonicalId: "p4", displayName: "Gena", aliases: [], knownEmails: [], leagues: ["sunday"], status: "regular" },
+    ];
+    const extraction: RawExtraction = {
+      date: "2026-07-05",
+      league: "sunday",
+      homeRosterRaw: [],
+      awayRosterRaw: [],
+      homeTeamLabelRaw: null,
+      awayTeamLabelRaw: null,
+      homeScore: 2,
+      awayScore: 0,
+      goals: [
+        { scorerRaw: "Ari Fox", assistRaw: null, team: "home" },
+        { scorerRaw: "Gera", assistRaw: null, team: "home" }, // one edit from "Gena": flagged, goal dropped
+      ],
+      mvpRaw: null,
+      notableMentions: [],
+      pickOrderRaw: null,
+      preDraftBalanceRaw: null,
+    };
+
+    const result = resolveExtractionToGameRecord(extraction, flaggedPlayers, meta);
+    expect(result.gameRecord.goals).toHaveLength(1);
+    expect(result.gameRecord).toMatchObject({ homeScore: 1, statedHomeScore: 2, status: "pending_review" });
   });
 
   it("auto-provisions a genuinely novel scorer name instead of dropping the goal", () => {

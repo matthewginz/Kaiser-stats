@@ -430,3 +430,12 @@ alter table reminder_email_log add constraint reminder_email_log_email_type_chec
 -- (same as a captain: real roster member, never a real pick).
 alter table draft_sessions add column if not exists home_balance_canonical_ids text[] not null default '{}';
 alter table draft_sessions add column if not exists away_balance_canonical_ids text[] not null default '{}';
+
+-- Migration (2026-10-16): game review status + score derived from goal_events.
+-- Run from supabase/migrations/2026-10-16_game_review_status.sql (which also
+-- holds a one-off fix for 2026-10-11-sunday); mirrored here without that fix.
+alter table game_records add column if not exists status text not null default 'published'
+  check (status in ('published', 'pending_review'));
+alter table game_records add column if not exists review_reason text;
+alter table game_records add column if not exists stated_home_score integer;
+alter table game_records add column if not exists stated_away_score integer;

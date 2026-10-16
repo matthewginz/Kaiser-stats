@@ -36,6 +36,11 @@ describe("buildPersistenceRows", () => {
       away_team_label: "Blue",
       home_score: 2,
       away_score: 1,
+      // Unset on the record (e.g. a draft-created game): no stated score, published.
+      stated_home_score: null,
+      stated_away_score: null,
+      status: "published",
+      review_reason: null,
       mvp_canonical_id: "p1",
       description: "Full pasted report text.",
       source: "manual:2026-07-05-sunday",
